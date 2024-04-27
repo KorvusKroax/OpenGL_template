@@ -5,38 +5,47 @@
 
 #include <iostream>
 
-const unsigned int WIDTH = 800;
-const unsigned int HEIGHT = 600;
+const unsigned int CANVAS_WIDTH = 320;
+const unsigned int CANVAS_HEIGHT = 200;
+const unsigned int PIXEL_SIZE = 3;
 
-static unsigned int canvas[WIDTH * HEIGHT];
+const unsigned int WIDTH = CANVAS_WIDTH * PIXEL_SIZE;
+const unsigned int HEIGHT = CANVAS_HEIGHT * PIXEL_SIZE;
+
+static unsigned int canvas[CANVAS_WIDTH * CANVAS_HEIGHT];
+
+struct Coord
+{
+    int x, y;
+
+    Coord(int _x = 0, int _y = 0)
+    {
+        x = _x; y = _y;
+    }
+};
 
 struct Color
 {
     int r, g, b, a, value;
 
+    Color(int _r = 0, int _g = 0, int _b = 0, int _a = 0)
+    {
+        r = _r; g = _g; b = _b; a = _a;
+        updateValue();
+    }
+
     void updateValue()
     {
         value = r|(g<<8)|(b<<16)|(a<<24);
     }
-
-    Color(int _r, int _g, int _b, int _a)
-    {
-        r = _r;
-        g = _g;
-        b = _b;
-        a = _a;
-        updateValue();
-    }
 };
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
-void fillCanvas(Color color = Color(0, 0, 30, 255));
-void setPixel(int x, int y, Color color);
-void drawBox(int x, int y, int w, int h, Color color);
+void processDisplay();
+void fillCanvas(Color color = Color());
+void setPixel(Coord p, Color color);
 
-int posX = 200;
-int posY = 50;
+Coord pos = Coord(200, 50);
 
 int main()
 {
@@ -44,6 +53,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "title", NULL, NULL);
     if (window == NULL) {
@@ -52,7 +62,7 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    // glfwSetWindowPos(window, 100, 100);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -93,7 +103,7 @@ int main()
     unsigned int textureColorbuffer;
     glGenTextures(1, &textureColorbuffer);
     glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CANVAS_WIDTH, CANVAS_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
@@ -101,7 +111,7 @@ int main()
     unsigned int renderbuffer;
     glGenRenderbuffers(1, &renderbuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, CANVAS_WIDTH, CANVAS_HEIGHT);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
@@ -111,9 +121,7 @@ int main()
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
-
-        fillCanvas();
-        drawBox(posX, posY, 10, 20, Color(255, 255, 100, 255));
+        processDisplay();
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glDisable(GL_DEPTH_TEST);
@@ -121,7 +129,7 @@ int main()
         canvasShader.use();
         glBindVertexArray(canvasVAO);
         glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CANVAS_WIDTH, CANVAS_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
@@ -137,10 +145,7 @@ int main()
     return 0;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
+
 
 void processInput(GLFWwindow *window)
 {
@@ -149,38 +154,37 @@ void processInput(GLFWwindow *window)
     }
 
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        if (posY < HEIGHT - 1) posY++;
+        if (pos.y < CANVAS_HEIGHT - 1) pos.y++;
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        if (posX < WIDTH - 1) posX++;
+        if (pos.x < CANVAS_WIDTH - 1) pos.x++;
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        if (posY > 0) posY--;
+        if (pos.y > 0) pos.y--;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        if (posX > 0) posX--;
+        if (pos.x > 0) pos.x--;
     }
 }
 
+void processDisplay()
+{
+    fillCanvas();
+    setPixel(pos, Color(255, 255, 100, 255));
+}
+
+
+
 void fillCanvas(Color color)
 {
-    for (int i = 0; i < WIDTH * HEIGHT; i++) {
+    for (int i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
         canvas[i] = color.value;
     }
 }
 
-void setPixel(int x, int y, Color color)
+void setPixel(Coord p, Color color)
 {
-    if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT) {
-        canvas[x + y * WIDTH] = color.value;
-    }
-}
-
-void drawBox(int x, int y, int w, int h, Color color)
-{
-    for (int i = 0; i < w; i++) {
-        for (int j = 0; j < h; j++) {
-            setPixel(x + i, y + j, color);
-        }
+    if (p.x >= 0 && p.x < CANVAS_WIDTH && p.y >= 0 && p.y < CANVAS_HEIGHT) {
+        canvas[p.x + p.y * CANVAS_WIDTH] = color.value;
     }
 }
