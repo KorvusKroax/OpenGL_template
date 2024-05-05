@@ -1,42 +1,35 @@
+#include <canvas.h>
 #include <open_gl.h>
-
-#include <color_rgba.h>
-#include <vector2_int.h>
-
 #include <iostream>
 
 const unsigned int CANVAS_WIDTH = 320;
 const unsigned int CANVAS_HEIGHT = 200;
-const unsigned int PIXEL_SIZE = 3;
+const float PIXEL_SCALE = 3;
+
+Canvas canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 
 void processInput(GLFWwindow *window);
 void processDisplay();
-void fillCanvas(ColorRGBA color = ColorRGBA());
-void setPixel(int x, int y, ColorRGBA color);
-void setPixel(Vector2Int p, ColorRGBA color);
-void drawBox(Vector2Int pos, Vector2Int size, ColorRGBA color);
 
 Vector2Int pos = Vector2Int(200, 50);
 
 int main()
 {
-    openGL_init(CANVAS_WIDTH, CANVAS_HEIGHT, PIXEL_SIZE);
-
-    Shader canvasShader("shaders/canvas.vert", "shaders/canvas.frag");
+    openGL_init(canvas.width, canvas.height, canvas.pixels, PIXEL_SCALE);
 
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
         processDisplay();
 
-        openGL_update(canvasShader);
+        openGL_update();
     }
 
     openGL_terminate();
     return 0;
 }
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -58,37 +51,8 @@ void processInput(GLFWwindow *window)
 
 void processDisplay()
 {
-    fillCanvas();
-    drawBox(pos, Vector2Int(10, 15), ColorRGBA(0, 255, 255, 255));
-    setPixel(pos, ColorRGBA(255, 255, 255, 255));
-}
-
-void fillCanvas(ColorRGBA color)
-{
-    for (int i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
-        pixels[i] = color.value;
-    }
-}
-
-void setPixel(int x, int y, ColorRGBA color)
-{
-    if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
-        pixels[x + y * CANVAS_WIDTH] = color.value;
-    }
-}
-
-void setPixel(Vector2Int p, ColorRGBA color)
-{
-    if (p.x >= 0 && p.x < CANVAS_WIDTH && p.y >= 0 && p.y < CANVAS_HEIGHT) {
-        pixels[p.x + p.y * CANVAS_WIDTH] = color.value;
-    }
-}
-
-void drawBox(Vector2Int pos, Vector2Int size, ColorRGBA color)
-{
-    for (int x = 0; x < size.x; x++) {
-        for (int y = 0; y < size.y; y++) {
-            setPixel(pos.x + x, pos.y + y, color);
-        }
-    }
+    canvas.fillCanvas();
+    canvas.setPixel(pos, ColorRGBA(255, 255, 255, 255));
+    canvas.drawCircle(pos, 20, ColorRGBA(0, 255, 255, 255));
+    canvas.drawLine(pos, Vector2Int(canvas.width * .5f, canvas.height * .5f), ColorRGBA(255, 255, 0, 255));
 }

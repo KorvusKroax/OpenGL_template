@@ -9,16 +9,7 @@ struct ColorRGBA
     unsigned int a;
     unsigned int value;
 
-    ColorRGBA()
-    {
-        r = 0;
-        g = 0;
-        b = 0;
-        a = 0;
-        value = 0;
-    }
-
-    ColorRGBA(unsigned int _r, unsigned int _g, unsigned int _b, unsigned int _a)
+    ColorRGBA(unsigned int _r = 0, unsigned int _g = 0, unsigned int _b = 0, unsigned int _a = 0)
     {
         r = _r;
         g = _g;

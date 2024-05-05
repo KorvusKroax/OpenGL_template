@@ -1,12 +1,15 @@
+#ifndef OPEN_GL_H
+#define OPEN_GL_H
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <shader.h>
+#include <canvas.h>
 
 unsigned int canvasWidth;
 unsigned int canvasHeight;
+int* canvasPixels;
 float pixelScale;
-
-static int* pixels;
 
 unsigned int windowWidth;
 unsigned int windowHeight;
@@ -29,24 +32,23 @@ unsigned int framebuffer;
 unsigned int textureColorbuffer;
 unsigned int renderbuffer;
 
-void openGL_init(unsigned int _canvasWidth, unsigned int _canvasHeight, float _pixelScale)
+Shader* quadShader;
+
+void openGL_init(unsigned int _canvasWidth, unsigned int _canvasHeight, int* _canvasPixels, float _pixelScale)
 {
     canvasWidth = _canvasWidth;
     canvasHeight = _canvasHeight;
+    canvasPixels = _canvasPixels;
     pixelScale = _pixelScale;
 
-    pixels = new int[canvasWidth * canvasHeight];
-
-    windowWidth = canvasWidth * pixelScale;
-    windowHeight =  canvasHeight * pixelScale;
+    windowWidth = _canvasWidth * pixelScale;
+    windowHeight =  _canvasHeight * pixelScale;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-
 
     window = glfwCreateWindow(windowWidth, windowHeight, "title", NULL, NULL);
     if (window == NULL) {
@@ -55,7 +57,6 @@ void openGL_init(unsigned int _canvasWidth, unsigned int _canvasHeight, float _p
         return;
     }
     glfwMakeContextCurrent(window);
-    // glfwSetWindowPos(window, 100, 100);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -79,7 +80,7 @@ void openGL_init(unsigned int _canvasWidth, unsigned int _canvasHeight, float _p
 
     glGenTextures(1, &textureColorbuffer);
     glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvasWidth, canvasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvasWidth, canvasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvasPixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
@@ -92,17 +93,19 @@ void openGL_init(unsigned int _canvasWidth, unsigned int _canvasHeight, float _p
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    quadShader = new Shader("shaders/canvas.vert", "shaders/canvas.frag");
 }
 
-void openGL_update(Shader quadShader)
+void openGL_update()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_DEPTH_TEST);
 
-    quadShader.use();
+    quadShader->use();
     glBindVertexArray(quadVAO);
     glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvasWidth, canvasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvasWidth, canvasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvasPixels);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glfwSwapBuffers(window);
@@ -118,3 +121,5 @@ void openGL_terminate()
 
     glfwTerminate();
 }
+
+#endif
