@@ -1,3 +1,6 @@
+#ifndef VECTOR2_INT_H
+#define VECTOR2_INT_H
+
 struct Vector2Int
 {
     int x;
@@ -15,3 +18,5 @@ struct Vector2Int
         y = _y;
     }
 };
+
+#endif

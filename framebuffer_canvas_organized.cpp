@@ -1,115 +1,38 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <open_gl.h>
 
-#include <learnopengl/shader_s.h>
+#include <color_rgba.h>
+#include <vector2_int.h>
 
 #include <iostream>
 
-#include <canvas.h>
-
-const unsigned int WIDTH = CANVAS_WIDTH * PIXEL_SIZE;
-const unsigned int HEIGHT = CANVAS_HEIGHT * PIXEL_SIZE;
+const unsigned int CANVAS_WIDTH = 320;
+const unsigned int CANVAS_HEIGHT = 200;
+const unsigned int PIXEL_SIZE = 3;
 
 void processInput(GLFWwindow *window);
 void processDisplay();
+void fillCanvas(ColorRGBA color = ColorRGBA());
+void setPixel(int x, int y, ColorRGBA color);
+void setPixel(Vector2Int p, ColorRGBA color);
+void drawBox(Vector2Int pos, Vector2Int size, ColorRGBA color);
 
 Vector2Int pos = Vector2Int(200, 50);
 
 int main()
 {
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "title", NULL, NULL);
-    if (window == NULL) {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    // glfwSetWindowPos(window, 100, 100);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
+    openGL_init(CANVAS_WIDTH, CANVAS_HEIGHT, PIXEL_SIZE);
 
     Shader canvasShader("shaders/canvas.vert", "shaders/canvas.frag");
-
-    float canvasVertices[] = {
-        // positions    // texCoords
-        -1.0f,  1.0f,   0.0f, 1.0f,
-        -1.0f, -1.0f,   0.0f, 0.0f,
-         1.0f, -1.0f,   1.0f, 0.0f,
-
-        -1.0f,  1.0f,   0.0f, 1.0f,
-         1.0f, -1.0f,   1.0f, 0.0f,
-         1.0f,  1.0f,   1.0f, 1.0f
-    };
-
-    unsigned int canvasVAO;
-    glGenVertexArrays(1, &canvasVAO);
-    glBindVertexArray(canvasVAO);
-
-    unsigned int canvasVBO;
-    glGenBuffers(1, &canvasVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, canvasVBO);
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(canvasVertices), &canvasVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-    unsigned int framebuffer;
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-    unsigned int textureColorbuffer;
-    glGenTextures(1, &textureColorbuffer);
-    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CANVAS_WIDTH, CANVAS_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-
-    unsigned int renderbuffer;
-    glGenRenderbuffers(1, &renderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, CANVAS_WIDTH, CANVAS_HEIGHT);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
         processDisplay();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
-
-        canvasShader.use();
-        glBindVertexArray(canvasVAO);
-        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CANVAS_WIDTH, CANVAS_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, canvas);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        openGL_update(canvasShader);
     }
 
-    glDeleteVertexArrays(1, &canvasVAO);
-    glDeleteBuffers(1, &canvasVBO);
-    glDeleteFramebuffers(1, &framebuffer);
-    glDeleteRenderbuffers(1, &renderbuffer);
-
-    glfwTerminate();
+    openGL_terminate();
     return 0;
 }
 
@@ -136,5 +59,36 @@ void processInput(GLFWwindow *window)
 void processDisplay()
 {
     fillCanvas();
-    setPixel(pos, ColorRGBA(255, 255, 100, 255));
+    drawBox(pos, Vector2Int(10, 15), ColorRGBA(0, 255, 255, 255));
+    setPixel(pos, ColorRGBA(255, 255, 255, 255));
+}
+
+void fillCanvas(ColorRGBA color)
+{
+    for (int i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
+        pixels[i] = color.value;
+    }
+}
+
+void setPixel(int x, int y, ColorRGBA color)
+{
+    if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
+        pixels[x + y * CANVAS_WIDTH] = color.value;
+    }
+}
+
+void setPixel(Vector2Int p, ColorRGBA color)
+{
+    if (p.x >= 0 && p.x < CANVAS_WIDTH && p.y >= 0 && p.y < CANVAS_HEIGHT) {
+        pixels[p.x + p.y * CANVAS_WIDTH] = color.value;
+    }
+}
+
+void drawBox(Vector2Int pos, Vector2Int size, ColorRGBA color)
+{
+    for (int x = 0; x < size.x; x++) {
+        for (int y = 0; y < size.y; y++) {
+            setPixel(pos.x + x, pos.y + y, color);
+        }
+    }
 }

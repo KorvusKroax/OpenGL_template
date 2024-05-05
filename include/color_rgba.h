@@ -1,10 +1,13 @@
+#ifndef COLOR_RGBA_H
+#define COLOR_RGBA_H
+
 struct ColorRGBA
 {
-    int r;
-    int g;
-    int b;
-    int a;
-    int value;
+    unsigned int r;
+    unsigned int g;
+    unsigned int b;
+    unsigned int a;
+    unsigned int value;
 
     ColorRGBA()
     {
@@ -15,7 +18,7 @@ struct ColorRGBA
         value = 0;
     }
 
-    ColorRGBA(int _r, int _g, int _b, int _a)
+    ColorRGBA(unsigned int _r, unsigned int _g, unsigned int _b, unsigned int _a)
     {
         r = _r;
         g = _g;
@@ -29,3 +32,5 @@ struct ColorRGBA
         value = r|(g<<8)|(b<<16)|(a<<24);
     }
 };
+
+#endif
