@@ -50,7 +50,7 @@ class Canvas
             if (dx > dy) {
                 int y = y1;
                 int d = dy * 2 - dx;
-                for (int x = x1; x < x2; x += sx) {
+                for (int x = x1; x != x2; x += sx) {
                     setPixel(x, y, color);
                     if (d > 0) {
                         y += sy;
@@ -61,7 +61,7 @@ class Canvas
             } else {
                 int x = x1;
                 int d = dx * 2 - dy;
-                for (int y = y1; y < y2; y += sy) {
+                for (int y = y1; y != y2; y += sy) {
                     setPixel(x, y, color);
                     if (d > 0) {
                         x += sx;
