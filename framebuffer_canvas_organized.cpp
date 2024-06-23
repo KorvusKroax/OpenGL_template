@@ -1,5 +1,6 @@
-#include <canvas.h>
 #include <open_gl.h>
+#include <canvas.h>
+
 #include <iostream>
 
 const unsigned int CANVAS_WIDTH = 320;
@@ -8,7 +9,7 @@ const float PIXEL_SCALE = 3;
 
 Canvas canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 
-void processInput(GLFWwindow *window);
+void processInput();
 void processDisplay();
 
 Vector2Int pos = Vector2Int(200, 50);
@@ -17,9 +18,9 @@ int main()
 {
     openGL_init(canvas.width, canvas.height, canvas.pixels, PIXEL_SCALE);
 
-    while (!glfwWindowShouldClose(window))
+    while (!openGL_shouldClose())
     {
-        processInput(window);
+        processInput();
         processDisplay();
 
         openGL_update();
@@ -29,7 +30,7 @@ int main()
     return 0;
 }
 
-void processInput(GLFWwindow* window)
+void processInput()
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);

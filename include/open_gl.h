@@ -112,6 +112,11 @@ void openGL_update()
     glfwPollEvents();
 }
 
+bool openGL_shouldClose()
+{
+    return glfwWindowShouldClose(window);
+}
+
 void openGL_terminate()
 {
     glDeleteVertexArrays(1, &quadVAO);
